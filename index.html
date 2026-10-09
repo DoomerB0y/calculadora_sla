@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#102a43">
+<title>Calculadora SLA</title>
+<style>
+:root{color-scheme:light;--navy:#102a43;--blue:#1769aa;--bg:#f3f6fa;--muted:#617386;--line:#d9e2ec;--green:#147d55}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172b3a}
+main{max-width:560px;margin:0 auto;padding:20px 15px 32px}
+header{background:var(--navy);color:#fff;padding:22px 20px;border-radius:22px;margin-bottom:16px}
+header h1{font-size:1.5rem;margin:0 0 5px}header p{margin:0;color:#d9e7f2;font-size:.93rem}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px;margin-bottom:14px;box-shadow:0 3px 12px #102a4308}
+h2{font-size:1rem;margin:0 0 14px}
+label,.field-label{display:block;font-weight:650;font-size:.9rem;margin-bottom:6px}
+input,select{font:inherit;width:100%;min-height:48px;padding:10px 12px;border:1px solid #b8c7d6;border-radius:11px;background:#fff;color:#172b3a}
+input:focus,select:focus{outline:3px solid #1769aa25;border-color:var(--blue)}
+.field{margin-bottom:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.options{display:grid;gap:9px}
+.option{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;font-weight:500}
+.option input{width:18px;min-height:18px;margin-top:3px;accent-color:var(--blue)}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.day{border:1px solid var(--line);border-radius:10px;text-align:center;padding:9px 0;font-size:.82rem;font-weight:650}
+.day input{width:16px;min-height:16px;display:block;margin:0 auto 5px;accent-color:var(--blue)}
+button{width:100%;min-height:52px;border:0;border-radius:13px;background:var(--blue);color:#fff;font:inherit;font-weight:750;font-size:1rem;cursor:pointer}
+button:active{transform:scale(.99)}
+.secondary{background:#eaf1f8;color:var(--navy);margin-top:9px}
+.result{display:none;background:#eaf7f0;border:1px solid #b9e2cc;border-radius:16px;padding:17px;margin-top:14px}
+.result.show{display:block}.result .eyebrow{color:#426b58;font-size:.85rem;font-weight:650}.result .date{font-weight:750;font-size:1.08rem;margin:5px 0}.result .time{font-size:2.2rem;font-weight:850;letter-spacing:-.04em;color:var(--green)}
+.result .detail{font-size:.9rem;color:#426b58;line-height:1.5}
+.error{display:none;color:#a12622;background:#fff0ef;border:1px solid #f2c4c1;padding:11px;border-radius:10px;margin-top:12px;font-size:.9rem}
+.hint{font-size:.82rem;color:var(--muted);line-height:1.45;margin:8px 0 0}
+.hidden{display:none!important}
+footer{text-align:center;color:var(--muted);font-size:.78rem;padding:5px 8px 20px}
+@media(min-width:500px){main{padding-top:28px}.card{padding:20px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>⏱️ Calculadora SLA</h1>
+  <p>Calcula la fecha y hora límite de tus tickets.</p>
+</header>
+
+<section class="card">
+  <h2>1. Datos del ticket</h2>
+  <div class="field">
+    <label for="receivedDate">Fecha de recepción</label>
+    <input id="receivedDate" type="date">
+  </div>
+  <div class="field">
+    <label for="receivedTime">Hora de recepción</label>
+    <input id="receivedTime" type="time" value="09:00" required>
+  </div>
+  <div class="grid">
+    <div class="field">
+      <label for="slaHours">SLA: horas</label>
+      <input id="slaHours" type="number" min="0" step="1" value="2" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="slaMinutes">SLA: minutos</label>
+      <input id="slaMinutes" type="number" min="0" max="59" step="1" value="30" inputmode="numeric">
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>2. Regla de conteo</h2>
+  <div class="options">
+    <label class="option"><input type="radio" name="mode" value="business" checked> <span><strong>Horario de atención</strong><br><small>Cuenta solo durante los días y horas que indiques.</small></span></label>
+    <label class="option"><input type="radio" name="mode" value="continuous"> <span><strong>Horas corridas (24/7)</strong><br><small>Cuenta noches, fines de semana y feriados.</small></span></label>
+  </div>
+</section>
+
+<section class="card" id="scheduleCard">
+  <h2>3. Horario de atención de este ticket</h2>
+  <div class="grid">
+    <div class="field">
+      <label for="openTime">Hora de apertura</label>
+      <input id="openTime" type="time" value="09:00">
+    </div>
+    <div class="field">
+      <label for="closeTime">Hora de cierre</label>
+      <input id="closeTime" type="time" value="18:00">
+    </div>
+  </div>
+  <div class="field">
+    <span class="field-label">Días de atención</span>
+    <div class="days">
+      <label class="day"><input type="checkbox" value="1" checked>Lun</label>
+      <label class="day"><input type="checkbox" value="2" checked>Mar</label>
+      <label class="day"><input type="checkbox" value="3" checked>Mié</label>
+      <label class="day"><input type="checkbox" value="4" checked>Jue</label>
+      <label class="day"><input type="checkbox" value="5" checked>Vie</label>
+      <label class="day"><input type="checkbox" value="6">Sáb</label>
+      <label class="day"><input type="checkbox" value="0">Dom</label>
+    </div>
+  </div>
+  <p class="hint">Si el ticket llega fuera del horario o en un día no laborable, el conteo comenzará en la próxima apertura seleccionada.</p>
+</section>
+
+<button id="calculate">Calcular vencimiento</button>
+<div class="error" id="error" role="alert"></div>
+<section class="result" id="result" aria-live="polite">
+  <div class="eyebrow">FECHA Y HORA DE VENCIMIENTO</div>
+  <div class="date" id="resultDate"></div>
+  <div class="time" id="resultTime"></div>
+  <div class="detail" id="resultDetail"></div>
+  <button class="secondary" id="reset">Limpiar para otro ticket</button>
+</section>
+<footer>Calculadora local: los datos se procesan en este dispositivo y no se envían a ningún servidor.</footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+function localISODate(d){const offset=d.getTimezoneOffset();return new Date(d.getTime()-offset*60000).toISOString().slice(0,10)}
+$('receivedDate').value=localISODate(new Date());
+document.querySelectorAll('input[name="mode"]').forEach(el=>el.addEventListener('change',()=>{
+  $('scheduleCard').classList.toggle('hidden',document.querySelector('input[name="mode"]:checked').value==='continuous');
+  $('result').classList.remove('show');$('error').style.display='none';
+}));
+function parseTime(s){if(!s)return null;const [h,m]=s.split(':').map(Number);if(!Number.isInteger(h)||!Number.isInteger(m)||h<0||h>23||m<0||m>59)return null;return h*60+m}
+function dateAtMinutes(d,mins){const n=new Date(d);n.setHours(Math.floor(mins/60),mins%60,0,0);return n}
+function calculateBusiness(start,minutes,openM,closeM,days){
+  let cursor=new Date(start),remaining=minutes;
+  // Advance minute-by-minute only at day boundaries, consuming full available working windows.
+  for(let guard=0;guard<36600 && remaining>0;guard++){
+    const day=cursor.getDay();
+    const opening=dateAtMinutes(cursor,openM),closing=dateAtMinutes(cursor,closeM);
+    if(days.has(day)){
+      if(cursor<opening)cursor=new Date(opening);
+      if(cursor<closing){
+        const available=Math.floor((closing-cursor)/60000);
+        if(remaining<=available)return new Date(cursor.getTime()+remaining*60000);
+        remaining-=available;
+      }
+    }
+    cursor.setDate(cursor.getDate()+1);
+    cursor=dateAtMinutes(cursor,openM);
+  }
+  return remaining===0?cursor:null;
+}
+$('calculate').addEventListener('click',()=>{
+  $('error').style.display='none';$('result').classList.remove('show');
+  const date=$('receivedDate').value,time=$('receivedTime').value;
+  const h=Number($('slaHours').value),m=Number($('slaMinutes').value);
+  if(!date||!time||$('slaHours').value===''||$('slaMinutes').value===''||!Number.isInteger(h)||!Number.isInteger(m)||h<0||m<0||m>59||h*60+m<=0){
+    $('error').textContent='Revisa la fecha, la hora y el SLA. Ingresa horas válidas y minutos entre 0 y 59; el plazo debe ser mayor que cero.';$('error').style.display='block';return;
+  }
+  const start=new Date(`${date}T${time}:00`);
+  if(Number.isNaN(start.getTime())){$('error').textContent='La fecha o la hora no son válidas.';$('error').style.display='block';return;}
+  const total=h*60+m;
+  const mode=document.querySelector('input[name="mode"]:checked').value;
+  let due;
+  if(mode==='continuous')due=new Date(start.getTime()+total*60000);
+  else{
+    const openM=parseTime($('openTime').value),closeM=parseTime($('closeTime').value);
+    const days=new Set([...document.querySelectorAll('.days input:checked')].map(x=>Number(x.value)));
+    if(openM===null||closeM===null||openM>=closeM||days.size===0){
+      $('error').textContent='Configura un horario válido (apertura anterior al cierre) y selecciona al menos un día de atención.';$('error').style.display='block';return;
+    }
+    due=calculateBusiness(start,total,openM,closeM,days);
+  }
+  if(!due){$('error').textContent='No se pudo calcular el vencimiento. Revisa la configuración del horario.';$('error').style.display='block';return;}
+  $('resultDate').textContent=new Intl.DateTimeFormat('es-PE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(due);
+  $('resultTime').textContent=new Intl.DateTimeFormat('es-PE',{hour:'2-digit',minute:'2-digit',hour12:false}).format(due);
+  $('resultDetail').textContent=mode==='continuous'?'Cálculo con horas corridas (24/7).':'Cálculo con horario de atención personalizado; fuera de horario, el conteo inicia en la próxima apertura.';
+  $('result').classList.add('show');
+  $('result').scrollIntoView({behavior:'smooth',block:'nearest'});
+});
+$('reset').addEventListener('click',()=>{
+  $('receivedDate').value=localISODate(new Date());$('receivedTime').value='09:00';
+  $('slaHours').value='2';$('slaMinutes').value='30';$('openTime').value='09:00';$('closeTime').value='18:00';
+  document.querySelectorAll('.days input').forEach(x=>x.checked=Number(x.value)>=1&&Number(x.value)<=5);
+  document.querySelector('input[name="mode"][value="business"]').checked=true;
+  $('scheduleCard').classList.remove('hidden');$('result').classList.remove('show');$('error').style.display='none';
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+</script>
+</body>
+</html>
